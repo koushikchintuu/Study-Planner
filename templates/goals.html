@@ -3,7 +3,6 @@
 {% block title %}Study Goals{% endblock %}
 
 {% block hero %}
-<!-- Hero Section -->
 <div class="hero-section text-center py-5" style="background: #f8f9fa;">
     <div class="container">
         <h1 class="display-4 font-weight-bold">Track Your Study Goals</h1>
@@ -18,102 +17,115 @@
 
 {% block content %}
 <div class="container my-5">
-    <!-- Add New Goal Form -->
     <div class="mb-4">
         <h2 class="text-center fw-bold">Add a New Goal</h2>
-        <form method="POST" action="/goals" class="d-flex justify-content-center gap-3">
-            <input type="text" name="goal_name" placeholder="Enter your goal" class="form-control" required>
+        <form method="POST" action="/goals" class="d-flex flex-column gap-3">
+            <input type="text" name="title" placeholder="Goal Title" class="form-control mb-2" required>
+            <textarea name="description" placeholder="Goal Description" class="form-control mb-2" required></textarea>
             <button type="submit" class="btn btn-primary">Add Goal</button>
         </form>
     </div>
 
-    <!-- Goals List -->
     <div class="mb-4">
         <h3 class="fw-bold">Your Goals</h3>
-        <ul class="list-group mb-4">
+        {% if goals %}
+        <ul class="list-group">
             {% for goal in goals %}
-            <li class="list-group-item d-flex flex-column gap-2">
+            <li class="list-group-item" id="goal-{{ goal.id }}">
                 <div class="d-flex justify-content-between align-items-center">
-                    <strong>{{ goal.goal_name }}</strong>
+                    <div>
+                        <strong>{{ goal.title }}</strong>
+                        <p class="mb-0 text-muted">{{ goal.description }}</p>
+                    </div>
                     <span class="badge {% if goal.progress == 100 %}bg-success {% elif goal.progress >= 50 %}bg-warning {% else %}bg-danger{% endif %}">
                         {{ goal.progress }}%
                     </span>
                 </div>
-                <div class="d-flex align-items-center gap-2">
-                    <form method="POST" action="/update_goal/{{ goal.id }}" class="d-inline">
-                        <input type="hidden" name="action" value="decrease">
-                        <button type="submit" class="btn btn-sm btn-outline-danger">-</button>
-                    </form>
+                <div class="d-flex align-items-center mt-2">
+                    <button onclick="updateGoal({{ goal.id }}, 'decrease')" class="btn btn-sm btn-outline-danger me-2">-</button>
                     <div class="progress flex-grow-1">
                         <div class="progress-bar bg-primary" role="progressbar" style="width: {{ goal.progress }}%;" aria-valuenow="{{ goal.progress }}" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
-                    <form method="POST" action="/update_goal/{{ goal.id }}" class="d-inline">
-                        <input type="hidden" name="action" value="increase">
-                        <button type="submit" class="btn btn-sm btn-outline-success">+</button>
-                    </form>
+                    <button onclick="updateGoal({{ goal.id }}, 'increase')" class="btn btn-sm btn-outline-success ms-2">+</button>
                 </div>
             </li>
             {% endfor %}
         </ul>
+        {% else %}
+        <p class="text-muted">No goals added yet. Start by creating a new goal!</p>
+        {% endif %}
     </div>
 
-    <!-- Progress Bar Section -->
     <div class="mb-4">
         <h4 class="fw-bold">Overall Progress</h4>
         <div class="progress">
-            <div id="progress-bar" class="progress-bar bg-primary" role="progressbar" style="width: {{ total_progress }}%;" aria-valuenow="{{ total_progress }}" aria-valuemin="0" aria-valuemax="100">
+            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ total_progress }}%;" aria-valuenow="{{ total_progress }}" aria-valuemin="0" aria-valuemax="100">
                 {{ total_progress }}%
             </div>
         </div>
     </div>
 
-    <!-- Pie Chart Section -->
     <div class="mb-4">
         <h4 class="fw-bold">Goal Progress Breakdown</h4>
-        <canvas id="progressChart" width="300" height="300"></canvas>
+        <canvas id="progressChart" width="200" height="200"></canvas>
     </div>
 </div>
 
-<!-- Include Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <script>
-    document.querySelectorAll('form[action^="/update_goal"]').forEach(form => {
-        form.addEventListener('submit', async function (event) {
-            event.preventDefault(); // Prevent form submission
-
-            const action = form.querySelector('input[name="action"]').value;
-            const goalId = form.action.split('/').pop(); // Extract goal ID from URL
-
-            try {
-                const response = await fetch(`/update_goal/${goalId}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: new URLSearchParams({ action: action })
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-
-                    // Update the progress bar and badge
-                    const progressBar = form.parentElement.querySelector('.progress-bar');
-                    const badge = form.parentElement.parentElement.querySelector('.badge');
-                    progressBar.style.width = `${data.progress}%`;
-                    badge.textContent = `${data.progress}%`;
-
-                    // Update the pie chart
-                    progressChart.data.datasets[0].data = [data.completed, data.remaining];
-                    progressChart.update();
-                } else {
-                    console.error('Error updating goal:', await response.text());
+    const ctx = document.getElementById('progressChart').getContext('2d');
+    const progressChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['Completed Goals', 'In Progress'],
+            datasets: [{
+                data: [{{ progress_data.completed }}, {{ progress_data.remaining }}],
+                backgroundColor: ['#28a745', '#ffc107']
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top'
                 }
-            } catch (error) {
-                console.error('Error:', error);
             }
-        });
+        }
     });
 
-    
-</script>
+    async function updateGoal(goalId, action) {
+        try {
+            const response = await fetch(`/update_goal/${goalId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ action })
+            });
 
+            if (!response.ok) {
+                throw new Error('Failed to update goal progress');
+            }
+
+            const data = await response.json();
+
+            // Update the progress bar
+            const progressBar = document.querySelector(`#goal-${goalId} .progress-bar`);
+            progressBar.style.width = `${data.new_progress}%`;
+            progressBar.setAttribute('aria-valuenow', data.new_progress);
+
+            // Update the badge
+            const badge = document.querySelector(`#goal-${goalId} .badge`);
+            badge.textContent = `${data.new_progress}%`;
+            badge.className = `badge ${data.new_progress == 100 ? 'bg-success' : data.new_progress >= 50 ? 'bg-warning' : 'bg-danger'}`;
+
+            // Update the chart
+            progressChart.data.datasets[0].data = [data.completed, data.remaining];
+            progressChart.update();
+        } catch (error) {
+            console.error(error);
+            alert('Failed to update the goal progress.');
+        }
+    }
+</script>
 {% endblock %}

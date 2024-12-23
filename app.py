@@ -217,31 +217,87 @@ def print_users():
 
 # Goals
 
+# Calculate overall progress
+def calculate_total_progress(goals):
+    if not goals:
+        return 0
+    total_progress = sum(goal.progress for goal in goals)
+    return round(total_progress / len(goals))
+
+# Manage goals route
 @app.route('/goals', methods=['GET', 'POST'])
 def manage_goals():
     if 'user_id' not in session:
+        flash("You must be logged in to view your goals.", "error")
         return redirect(url_for('login'))
 
     user_id = session['user_id']
 
     if request.method == 'POST':
-        title = request.form.get('title')
-        description = request.form.get('description')
+        title = request.form.get('title', '').strip()
+        description = request.form.get('description', '').strip()
         if not title or not description:
             flash("Title and description cannot be empty!", "error")
             return redirect(url_for('manage_goals'))
-        
+
         new_goal = Goal(user_id=user_id, title=title, description=description, progress=0)
         try:
             db.session.add(new_goal)
             db.session.commit()
             flash("Goal added successfully!", "success")
         except Exception as e:
-            flash(f"Error: {str(e)}", "error")
+            db.session.rollback()
+            flash(f"Error adding goal: {str(e)}", "error")
+
         return redirect(url_for('manage_goals'))
 
     goals = Goal.query.filter_by(user_id=user_id).all()
-    return render_template('goals.html', goals=goals)
+    total_progress = calculate_total_progress(goals)
+
+    completed_goals = sum(1 for goal in goals if goal.progress == 100)
+    in_progress_goals = len(goals) - completed_goals
+
+    return render_template(
+        'goals.html',
+        goals=goals,
+        total_progress=total_progress,
+        progress_data={"completed": completed_goals, "remaining": in_progress_goals}
+    )
+
+@app.route('/update_goal/<int:goal_id>', methods=['POST'])
+def update_goal(goal_id):
+    if 'user_id' not in session:
+        return jsonify({"error": "Authentication required"}), 403
+
+    user_id = session['user_id']
+    goal = Goal.query.filter_by(id=goal_id, user_id=user_id).first()
+
+    if not goal:
+        return jsonify({"error": "Goal not found"}), 404
+
+    action = request.json.get('action')
+    if action == 'increase' and goal.progress < 100:
+        goal.progress = min(goal.progress + 10, 100)
+    elif action == 'decrease' and goal.progress > 0:
+        goal.progress = max(goal.progress - 10, 0)
+
+    try:
+        db.session.commit()
+
+        # Calculate new progress data
+        total_goals = Goal.query.filter_by(user_id=user_id).count()
+        completed_goals = Goal.query.filter_by(user_id=user_id, progress=100).count()
+        completed_percentage = int((completed_goals / total_goals) * 100) if total_goals > 0 else 0
+
+        return jsonify({
+            "new_progress": goal.progress,
+            "completed": completed_percentage,
+            "remaining": 100 - completed_percentage
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
 
 
 # Notes

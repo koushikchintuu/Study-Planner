@@ -109,7 +109,7 @@ main.container {
     padding: 20px;
     width: 90%;
     max-width: 900px;
-    background: #fff;
+    background: #a79fbd;
     border-radius: 8px;
     box-shadow: 0 2px 10px var(--shadow-color);
     transition: background 0.3s ease, color 0.3s ease;

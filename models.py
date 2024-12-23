@@ -18,12 +18,15 @@ class Schedule(db.Model):
     priority = db.Column(db.String(20), nullable=False)
     status = db.Column(db.String(20), default='to-do')
 
+# Goal Model
 class Goal(db.Model):
     __tablename__ = 'goals'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    goal_name = db.Column(db.String(120), nullable=False)
+    title = db.Column(db.String(120), nullable=False)
+    description = db.Column(db.String(255), nullable=False)
     progress = db.Column(db.Integer, default=0)
+
 
 class Note(db.Model):
     __tablename__ = 'notes'
