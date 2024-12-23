@@ -3,7 +3,7 @@
 **Study Planner** is a web application designed to help students organize their tasks, set goals, and take notes efficiently. The platform offers a user-friendly interface and powerful tools to streamline productivity and time management.
 
 ---
-
+#### Video Demo: <https://youtu.be/gEK-pZkLObw?si=Py_1iZk6WPPu6IMm>
 ## Features
 
 - **Task Management**: Add, edit, view, and delete tasks with priorities, deadlines, and status updates (e.g., to-do, done).
