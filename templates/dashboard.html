@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+
+{% block hero %}
+<!-- Empty to remove hero section -->
+{% endblock %}
+
+
+{% block features %}
+    <!-- Empty block to remove features section -->
+{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="text-center mb-4">
+        <h2 class="fw-bold">Dashboard</h2>
+        <p class="text-muted">Welcome, {{ user.username }}! Manage your schedules, goals, and notes efficiently.</p>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="d-flex justify-content-center gap-3 mb-5">
+        <a href="{{ url_for('add_schedule') }}" class="btn btn-primary">Add Schedule</a>
+        <a href="{{ url_for('view_schedules') }}" class="btn btn-outline-primary">View All Schedules</a>
+        <a href="{{ url_for('manage_goals') }}" class="btn btn-outline-success">Manage Goals</a>
+        <a href="{{ url_for('manage_notes') }}" class="btn btn-outline-info">Manage Notes</a>
+    </div>
+
+    <div class="row">
+        <!-- Recent Goal -->
+        <div class="col-md-6">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Recent Goal</h5>
+                    {% if recent_goal %}
+                        <p class="card-text"><strong>{{ recent_goal.goal_name }}</strong> - Progress: {{ recent_goal.progress }}%</p>
+                        <a href="{{ url_for('manage_goals') }}" class="btn btn-link">See More</a>
+                    {% else %}
+                        <p class="card-text text-muted">No goals set yet!</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Note -->
+        <div class="col-md-6">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Recent Note</h5>
+                    {% if recent_note %}
+                        <p class="card-text"><strong>{{ recent_note.title }}</strong>: {{ recent_note.content[:50] }}...</p>
+                        <a href="{{ url_for('manage_notes') }}" class="btn btn-link">See More</a>
+                    {% else %}
+                        <p class="card-text text-muted">No notes available yet!</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Table -->
+    <h3 class="mt-4">Your Tasks</h3>
+    <div class="mb-3">
+        <label for="status-filter" class="form-label">Filter by Status:</label>
+        <select id="status-filter" class="form-select w-auto">
+            <option value="all">All</option>
+            <option value="to-do">To-Do</option>
+            <option value="in-progress">In-Progress</option>
+            <option value="done">Done</option>
+        </select>
+    </div>
+
+    <div class="table-responsive">
+        <table id="task-table" class="table table-bordered table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Task Name</th>
+                    <th>Due Date</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if schedules %}
+                    {% for schedule in schedules %}
+                        <tr class="schedule-item" data-status="{{ schedule.status }}">
+                            <td>
+                                <input type="checkbox" class="form-check-input task-checkbox" 
+                                       {% if schedule.status == 'done' %}checked{% endif %} 
+                                       data-id="{{ schedule.id }}">
+                                <span class="ms-2 {% if schedule.status == 'done' %}text-decoration-line-through{% endif %}">
+                                    {{ schedule.task_name }}
+                                </span>
+                            </td>
+                            <td>{{ schedule.due_date }}</td>
+                            <td>{{ schedule.priority }}</td>
+                            <td class="task-status">{{ schedule.status }}</td>
+                            <td>
+                                <a href="{{ url_for('edit_schedule', schedule_id=schedule.id) }}" 
+                                   class="btn btn-sm btn-warning {% if schedule.status == 'done' %}disabled{% endif %}" 
+                                   {% if schedule.status == 'done' %}disabled{% endif %}>Edit</a>
+                                <button class="btn btn-sm btn-danger delete-schedule" data-id="{{ schedule.id }}">Delete</button>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">No tasks added yet!</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // Filter Tasks by Status
+    document.getElementById('status-filter').addEventListener('change', function () {
+        const filterValue = this.value;
+        const tasks = document.querySelectorAll('.schedule-item');
+
+        tasks.forEach(task => {
+            const status = task.getAttribute('data-status');
+            if (filterValue === 'all' || filterValue === status) {
+                task.style.display = '';
+            } else {
+                task.style.display = 'none';
+            }
+        });
+    });
+</script>
+{% endblock %}

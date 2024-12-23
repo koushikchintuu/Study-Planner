@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+
+{% block hero %}
+<!-- Empty block to remove the hero section -->
+{% endblock %}
+
+{% block features %}
+    <!-- Empty block to remove features section -->
+{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="text-center mb-4">
+        <h2 class="fw-bold">Add a New Task</h2>
+        <p class="text-muted">Plan your day by adding tasks and prioritizing them effectively.</p>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form id="add-schedule-form" class="needs-validation" novalidate>
+                <!-- Task Name -->
+                <div class="mb-3">
+                    <label for="task_name" class="form-label">Task Name:</label>
+                    <input 
+                        type="text" 
+                        id="task_name" 
+                        name="task_name" 
+                        class="form-control" 
+                        placeholder="Enter your task name" 
+                        required>
+                    <div class="invalid-feedback">
+                        Please provide a task name.
+                    </div>
+                </div>
+
+                <!-- Due Date -->
+                <div class="mb-3">
+                    <label for="due_date" class="form-label">Due Date:</label>
+                    <input 
+                        type="date" 
+                        id="due_date" 
+                        name="due_date" 
+                        class="form-control" 
+                        required>
+                    <div class="invalid-feedback">
+                        Please select a due date.
+                    </div>
+                </div>
+
+                <!-- Priority -->
+                <div class="mb-3">
+                    <label for="priority" class="form-label">Priority:</label>
+                    <select 
+                        id="priority" 
+                        name="priority" 
+                        class="form-select" 
+                        required>
+                        <option value="" selected disabled>Select priority</option>
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+                    <div class="invalid-feedback">
+                        Please select a priority level.
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="btn btn-primary w-100">Add Task</button>
+            </form>
+
+            <!-- Success Message -->
+            <div id="success-message" 
+                 class="alert alert-success mt-4" 
+                 role="alert" 
+                 style="display: none;">
+                Task added successfully!
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        // Handle form submission via AJAX
+        $('#add-schedule-form').on('submit', function (event) {
+            event.preventDefault();  // Prevent the default form submission
+
+            // Gather form data
+            const formData = {
+                task_name: $('#task_name').val(),
+                due_date: $('#due_date').val(),
+                priority: $('#priority').val(),
+            };
+
+            // Send AJAX request
+            $.ajax({
+                type: 'POST',
+                url: '{{ url_for("add_schedule") }}',
+                data: formData,
+                success: function () {
+                    // On success, show success message and reset the form
+                    $('#success-message').fadeIn().delay(2000).fadeOut();
+                    $('#add-schedule-form')[0].reset();
+                },
+                error: function () {
+                    alert('Error adding schedule.');
+                },
+            });
+        });
+
+        // Bootstrap validation
+        (function () {
+            'use strict';
+
+            const forms = document.querySelectorAll('.needs-validation');
+
+            Array.from(forms).forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+
+                    form.classList.add('was-validated');
+                }, false);
+            });
+        })();
+    });
+</script>
+{% endblock %}
